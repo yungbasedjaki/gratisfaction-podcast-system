@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gratisfaction — Episode Feed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --mango:#F2A62E;
+    --mango-soft:rgba(242,166,46,0.12);
+    --mango-line:rgba(242,166,46,0.30);
+    --ube:#7B5EA7;
+    --ube-soft:rgba(123,94,167,0.14);
+    --ube-line:rgba(123,94,167,0.35);
+    --bg-warm:#1C1814;
+    --bg-surface:#241F1A;
+    --bg-card:#2C2620;
+    --bg-elevated:#352E27;
+    --text-primary:#F0E8DA;
+    --text-secondary:#B5A896;
+    --text-muted:#7A6F62;
+    --line:rgba(255,255,255,0.06);
+    --success:#6B9E5B;
+    --danger:#C0392B;
+    --warning:#D4A017;
+    --r:14px;
+    --r-sm:10px;
+  }
+  html,body{background:var(--bg-warm);color:var(--text-primary);font-family:'DM Sans',-apple-system,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--bg-elevated);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--mango)}
+
+  .header{padding:24px 32px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:24px;flex-wrap:wrap;background:linear-gradient(180deg,var(--bg-surface),var(--bg-warm))}
+  .brand{display:flex;align-items:baseline;gap:14px}
+  .brand h1{font-family:'DM Serif Display',Georgia,serif;font-size:36px;color:var(--mango);letter-spacing:-0.5px}
+  .brand .tag{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+  .header-actions{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .week{color:var(--text-secondary);font-size:13px;padding:6px 12px;background:var(--bg-card);border-radius:999px;border:1px solid var(--line)}
+  .btn{padding:9px 16px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font-weight:500;font-size:13px;transition:all .15s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--mango);color:var(--mango)}
+  .btn.primary{background:var(--mango);color:var(--bg-warm);border-color:var(--mango);font-weight:600}
+  .btn.primary:hover{background:#FFB840;border-color:#FFB840;color:var(--bg-warm)}
+  .btn.ghost{background:transparent}
+
+  .layout{display:grid;grid-template-columns:1fr;gap:24px;padding:24px 32px;max-width:1800px;margin:0 auto}
+  .section-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+  .section-head h2{font-family:'DM Serif Display',Georgia,serif;font-size:22px;color:var(--text-primary);font-weight:400}
+  .section-head .meta{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px}
+  .section-head .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+  .feed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:1400px){.feed-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:780px){.feed-grid{grid-template-columns:1fr}}
+  .feed-col{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;min-height:420px;max-height:65vh;overflow:hidden}
+  .feed-col-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--bg-card)}
+  .feed-col-head .lane-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:14px}
+  .feed-col-head h3{font-family:'DM Serif Display',Georgia,serif;font-size:16px;font-weight:400;color:var(--text-primary);flex:1}
+  .feed-col-head .count{background:var(--bg-elevated);padding:2px 9px;border-radius:999px;font-size:11px;color:var(--text-muted);font-weight:600}
+  .feed-col-body{flex:1;overflow-y:auto;padding:8px}
+  .feed-col-body .empty{padding:30px 16px;text-align:center;color:var(--text-muted);font-size:12px}
+
+  .topic{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:8px;cursor:grab;transition:all .15s;position:relative}
+  .topic:hover{border-color:var(--mango-line);background:var(--bg-elevated)}
+  .topic:active{cursor:grabbing}
+  .topic.dragging{opacity:0.4}
+  .topic .title{font-weight:500;font-size:13px;line-height:1.35;margin-bottom:6px;color:var(--text-primary);padding-right:48px}
+  .topic .meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted);flex-wrap:wrap}
+  .topic .source{color:var(--mango)}
+  .topic .score{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:999px;background:var(--mango-soft);color:var(--mango);border:1px solid var(--mango-line);letter-spacing:0.3px}
+  .topic .score.s{background:rgba(107,158,91,0.15);color:var(--success);border-color:rgba(107,158,91,0.4)}
+  .topic .score.a{background:var(--mango-soft);color:var(--mango);border-color:var(--mango-line)}
+  .topic .score.b{background:var(--ube-soft);color:#B59FE0;border-color:var(--ube-line)}
+  .topic .score.c{background:rgba(255,255,255,0.04);color:var(--text-muted);border-color:var(--line)}
+  .topic .reasons{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+  .topic .reason{font-size:9px;padding:1px 6px;border-radius:4px;background:var(--bg-elevated);color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+  .topic .actions{position:absolute;bottom:8px;right:8px;display:none;gap:4px}
+  .topic:hover .actions{display:flex}
+  .topic .icon-btn{background:var(--bg-elevated);border:1px solid var(--line);color:var(--text-muted);width:22px;height:22px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:inherit}
+  .topic .icon-btn:hover{color:var(--danger);border-color:var(--danger)}
+
+  .add-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--bg-card)}
+  .add-row input,.add-row select{flex:1;background:var(--bg-elevated);border:1px solid var(--line);color:var(--text-primary);padding:8px 10px;border-radius:8px;font-family:inherit;font-size:12px}
+  .add-row input:focus,.add-row select:focus{outline:none;border-color:var(--mango)}
+  .add-row button{background:var(--mango);color:var(--bg-warm);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:12px;font-family:inherit}
+
+  .hosts-section{margin-top:8px}
+  .hosts-grid{display:grid;grid-template-columns:repeat(3,1fr) 1.2fr;gap:14px}
+  @media(max-width:1100px){.hosts-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.hosts-grid{grid-template-columns:1fr}}
+  .host-bucket{background:var(--bg-surface);border:2px dashed var(--line);border-radius:var(--r);min-height:280px;display:flex;flex-direction:column;transition:all .2s}
+  /* Single shared bucket — replaces 4 host buckets */
+  .single-bucket{background:var(--bg-surface);border:2px dashed var(--line);border-radius:var(--r);min-height:320px;display:flex;flex-direction:column;transition:all .2s;width:100%}
+  .single-bucket.drag-over{border-color:var(--mango);background:var(--mango-soft);transform:scale(1.005)}
+  .single-bucket-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .single-bucket-body{flex:1;padding:12px;overflow-y:auto;max-height:60vh;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;align-content:start}
+  .single-bucket-body .empty{grid-column:1 / -1;text-align:center;color:var(--text-muted);font-size:13px;padding:60px 20px;font-style:italic}
+  .single-bucket-body .empty-hint{font-style:normal;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;margin-top:8px;color:var(--text-muted)}
+  .host-bucket.drag-over{border-color:var(--mango);background:var(--mango-soft);transform:scale(1.01)}
+  .host-bucket-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .host-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:var(--bg-warm);font-weight:700;flex-shrink:0}
+  .host-avatar.pogi{background:var(--mango)}
+  .host-avatar.vanilla{background:#F0E8DA;color:var(--bg-warm)}
+  .host-avatar.rob{background:var(--danger);color:#fff}  /* PERMANENT: Bobbye = red, not ube */
+  .host-avatar.episode{background:linear-gradient(135deg,var(--mango),var(--danger));color:#fff}
+  .host-name{flex:1}
+  .host-name .name{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text-primary);font-weight:400;line-height:1.1}
+  .host-name .real{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px}
+  .host-count{background:var(--bg-elevated);padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;color:var(--text-secondary)}
+  .host-body{flex:1;padding:10px;overflow-y:auto;max-height:340px}
+  .host-body .empty{text-align:center;color:var(--text-muted);font-size:12px;padding:36px 14px;font-style:italic}
+  .host-body .empty-hint{font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:6px}
+
+  .episode-meta{padding:10px 14px;border-top:1px solid var(--line);background:var(--bg-card);display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-secondary)}
+  .episode-meta .stat{display:flex;flex-direction:column;gap:2px}
+  .episode-meta .stat .v{font-family:'DM Serif Display',serif;font-size:18px;color:var(--mango)}
+  .episode-meta .stat .l{text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-size:9px}
+
+  .brand-rules{margin-top:12px;background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:24px}
+  @media(max-width:980px){.brand-rules{grid-template-columns:1fr}}
+  .brand-rules h4{font-family:'DM Serif Display',serif;font-size:14px;color:var(--mango);margin-bottom:10px;font-weight:400}
+  .brand-rules ul{list-style:none;font-size:12px;color:var(--text-secondary);line-height:1.7}
+  .brand-rules li::before{content:"·";color:var(--mango);margin-right:8px;font-weight:700}
+  .brand-rules .phrases{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .phrase{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--mango-soft);color:var(--mango);border:1px solid var(--mango-line);font-style:italic}
+
+  .loader{display:inline-block;width:12px;height:12px;border:2px solid var(--text-muted);border-top-color:var(--mango);border-radius:50%;animation:spin 0.7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--bg-card);border:1px solid var(--mango);color:var(--text-primary);padding:12px 16px;border-radius:var(--r-sm);font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:1000;animation:slideIn 0.2s ease-out}
+  @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal.open{display:flex}
+  .modal-card{background:var(--bg-surface);border:1px solid var(--mango-line);border-radius:var(--r);padding:24px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto}
+
+  /* Run-of-Show modal */
+  .ros-card{background:var(--bg-surface);border:1px solid var(--mango-line);border-radius:var(--r);padding:24px;max-width:880px;width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
+  .ros-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .ros-head h3{font-family:'DM Serif Display',serif;font-size:24px;color:var(--mango);font-weight:400;line-height:1}
+  .ros-sub{color:var(--text-secondary);font-size:13px;margin-top:6px}
+  .ros-stats{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-muted)}
+  .ros-stats .stat{background:var(--bg-card);padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
+  .ros-stats .stat strong{color:var(--mango);font-weight:700}
+  .ros-list{display:flex;flex-direction:column;gap:8px}
+  .ros-item{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;display:flex;gap:12px;align-items:center;border-left:4px solid var(--slot-color, var(--mango));position:relative;transition:transform .15s}
+  .ros-item.cut{opacity:0.45;border-left-color:var(--text-muted)}
+  .ros-item.dragging{opacity:0.4;transform:scale(0.98)}
+  /* Slot color presets */
+  .ros-item[data-slot="cold-open"]{--slot-color:#F2A62E}
+  .ros-item[data-slot="hot-take"]{--slot-color:#C0392B}
+  .ros-item[data-slot="parent"]{--slot-color:#F0E8DA}
+  .ros-item[data-slot="crude"]{--slot-color:#D4A017}
+  .ros-item[data-slot="deep-dive"]{--slot-color:#7B5EA7}
+  .ros-item[data-slot="cultural"]{--slot-color:#6B9E5B}
+  .ros-item[data-slot="closer"]{border-left-image:linear-gradient(180deg,#F2A62E,#C0392B) 1;border-left:4px solid;border-image-slice:1;border-image-source:linear-gradient(180deg,#F2A62E,#C0392B)}
+  .ros-item[data-slot="flex"]{--slot-color:#7A6F62}
+  .ros-item .slot{font-size:10px;color:var(--slot-color,var(--mango));text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:3px}
+  .ros-item[data-slot="closer"] .slot{background:linear-gradient(90deg,#F2A62E,#7B5EA7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .ros-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px}
+  .ros-legend .chip{padding:3px 9px;border-radius:999px;border-left:3px solid var(--c);background:var(--bg-card);color:var(--text-secondary)}
+  .ros-item .num{font-family:'DM Serif Display',serif;font-size:22px;color:var(--mango);font-weight:700;line-height:1;flex-shrink:0;width:32px;text-align:center}
+  .ros-item .body{flex:1;min-width:0}
+  .ros-item .slot{font-size:10px;color:var(--mango);text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:3px}
+  .ros-item .title{font-size:14px;color:var(--text-primary);font-weight:500;line-height:1.3;margin-bottom:5px}
+  .ros-item .meta{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);align-items:center}
+  .ros-item .pillar{padding:2px 7px;background:var(--mango-soft);color:var(--mango);border-radius:4px;font-size:10px;font-weight:600}
+  .ros-item .pogi{background:var(--mango-soft);color:var(--mango)}
+  .ros-item .vanilla{background:rgba(240,232,218,0.10);color:var(--cream)}
+  .ros-item .rob{background:rgba(192,57,43,0.14);color:#E66B5C}  /* PERMANENT: Bobbye = red */
+  .ros-item .episode{background:linear-gradient(90deg,var(--mango-soft),rgba(192,57,43,0.14));color:var(--mango)}
+  .ros-item .group{background:linear-gradient(90deg,var(--mango-soft),rgba(192,57,43,0.14));color:var(--mango)}
+  .ros-item .duration{color:var(--text-secondary);font-style:italic}
+  .ros-item .actions{display:flex;gap:6px;flex-shrink:0}
+  .ros-item .icon-btn{background:var(--bg-elevated);border:1px solid var(--line);color:var(--text-muted);width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-family:inherit}
+  .ros-item .icon-btn:hover{color:var(--mango);border-color:var(--mango)}
+  .ros-item .icon-btn.danger:hover{color:var(--danger);border-color:var(--danger)}
+  .ros-cuts{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .ros-cuts h4{font-family:'DM Serif Display',serif;font-size:14px;color:var(--text-muted);margin-bottom:8px;font-weight:400}
+  .ros-actions{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px}
+  @media(max-width:600px){
+    .ros-card{padding:16px;max-height:95vh}
+    .ros-head{flex-direction:column;gap:10px}
+    .ros-item{padding:10px}
+    .ros-item .num{font-size:18px;width:24px}
+    .ros-item .title{font-size:13px}
+  }
+  .modal-card h3{font-family:'DM Serif Display',serif;font-size:22px;color:var(--mango);margin-bottom:12px}
+  .modal-card .body{color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:16px}
+  .modal-card .actions{display:flex;gap:10px;justify-content:flex-end}
+
+  .footer{text-align:center;padding:30px;color:var(--text-muted);font-size:11px;letter-spacing:0.5px}
+  .footer a{color:var(--mango);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">
+    <h1>Gratisfaction</h1>
+    <span class="tag">Tuesday Topic Lab</span>
+  </div>
+  <div class="header-actions">
+    <span class="week" id="weekLabel">—</span>
+    <button class="btn ghost" onclick="exportPicks()" title="Export your picks as JSON to share with the other hosts">Export My Picks</button>
+    <label class="btn ghost" for="importInput" style="cursor:pointer" title="Import picks JSON from another host">Import Picks
+      <input type="file" id="importInput" accept=".json" onchange="importPicks(event)" style="display:none">
+    </label>
+    <button class="btn ghost" onclick="clearAll()">Clear</button>
+    <button class="btn primary" onclick="refreshAll()" id="refreshBtn">Refresh Feeds</button>
+    <button class="btn primary" onclick="openRoS()" id="rosBtn" style="background:linear-gradient(135deg,var(--mango),var(--danger));border-color:var(--danger)" title="Auto-order picks into a timeline that flows">🎬 Build Timeline</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <section>
+    <div class="section-head">
+      <h2>Current Events Feed</h2>
+      <span class="meta">scored against the show's voice · drag picks into the pool</span>
+      <div class="right"><span class="meta" id="lastUpdated">tap refresh →</span></div>
+    </div>
+    <div class="feed-grid" id="feedGrid"></div>
+  </section>
+
+  <section class="hosts-section">
+    <div class="section-head">
+      <h2>This Week's Picks</h2>
+      <span class="meta">drag what you wanna riff on into the pool</span>
+    </div>
+    <div class="single-bucket" data-host="picks" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'picks')">
+      <div class="single-bucket-head">
+        <div class="host-avatar episode">●</div>
+        <div class="host-name"><div class="name">Pick Pool</div><div class="real">all 3 of us · this week</div></div>
+        <span class="host-count" id="count-picks">0</span>
+      </div>
+      <div class="single-bucket-body" id="bucket-picks"></div>
+        <div class="episode-meta">
+          <div class="stat"><span class="v" id="totalPicked">0</span><span class="l">total picked</span></div>
+          <div class="stat"><span class="v" id="avgScore">—</span><span class="l">avg brand fit</span></div>
+          <div class="stat"><span class="v" id="topPillar">—</span><span class="l">leading pillar</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- Foundation + What We're Tracking panels removed per Jakie's call -->
+
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal-card">
+    <h3 id="mTitle">—</h3>
+    <div class="body" id="mBody">—</div>
+    <div class="actions">
+      <button class="btn ghost" onclick="closeModal()">Close</button>
+      <a class="btn primary" id="mLink" target="_blank" rel="noopener">Open source ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============= RUN OF SHOW MODAL ============= -->
+<div class="modal" id="rosModal" onclick="if(event.target.id==='rosModal')closeRoS()">
+  <div class="ros-card">
+    <div class="ros-head">
+      <div>
+        <h3>🎬 Timeline</h3>
+        <p class="ros-sub" id="rosSub">Auto-ordered for flow · drag to reorder · ✕ drops · ↓ saves for next week</p>
+      </div>
+      <button class="btn ghost" onclick="closeRoS()" style="align-self:flex-start">Close</button>
+    </div>
+    <div class="ros-stats" id="rosStats"></div>
+    <div class="ros-list" id="rosList"></div>
+    <div class="ros-cuts" id="rosCuts"></div>
+    <div class="ros-actions">
+      <button class="btn ghost" onclick="rebuildRoS()">↻ Rebuild</button>
+      <button class="btn primary" onclick="exportRoS()">Export Run-of-Show ↓</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Gratisfaction · Tuesday Topic Lab · 3 friends, 23+ yrs, all dads · feeds + brand-fit + auto-RoS · picks persist locally per browser
+</div>
+
+<script>
+/* =========================================================================
+   GRATISFACTION EPISODE FEED — v2
+   Foundation: three friends grew up together (23-24 yrs), all dads now (35/36),
+   same neighborhood, same era. Heritage is one color of three, not the spine.
+   See podcast_system/GRATISFACTION_FOUNDATION_v2.md
+   ========================================================================= */
+
+// --- BRAND VOICE DICTIONARY (v2) ------------------------------------------
+const BRAND = {
+  era: ['90s','2000s','y2k','millennial','dial-up','aim','aol','msn','myspace','xanga','geocities','limewire','napster','blockbuster','hollywood video','vhs','mixtape','burned cd','ipod','razr','sidekick','beeper','pager','blackberry','flip phone','mtv','trl','nickelodeon','disney channel','cartoon network','toonami','dragon ball','pokemon','game boy','sega','n64','gamecube','playstation','ps2','xbox','halo','runescape','neopets','aol chat','jordans','tamagotchi','beyblade','yu-gi-oh','furby','silly bandz','jncos','bell-bottoms','low-rise','popped collar','frosted tips','hummer','escalade','minivan','tony hawk','grand theft auto','wwe','wwf','attitude era','undertaker','throwback','rerelease','reboot','remake','sequel','revival','reunion tour','rip','classic','vintage'],
+
+  parent: ['kid','baby','toddler','daycare','preschool','school pickup','school dropoff','dad','daddy','mom','mommy','parent','parenting','sleep training','tantrum','playdate','car seat','minivan','suv','soccer practice','t-ball','little league','homework','pta','field trip','school year','summer camp','bedtime','screen time','potty training','formula','breastfeeding','pediatrician','nap','crib','stroller','diaper'],
+
+  friendship: ['friend group','friendship','lifelong','since high school','since middle school','since elementary','grew up together','best friend','old friend','childhood friend','reunion','class reunion','fell out','cut off','grew apart','still close','loyal','loyalty','ride or die','homies','crew','squad','my guy','neighborhood','came up together','came up','known him for','known her for','same block','my block','our block','the block','around the way'],
+
+  heritage: ['filipino','filipino american','fil-am','asian american','black american','african american','immigrant','first generation','second generation','diaspora','code switch','heritage','race','ethnicity','culture','tradition','accent','bilingual','language barrier','mixed race','biracial','interracial','adobo','lumpia','lechon','jollibee','tagalog','soul food','bbq','cookout','holiday tradition'],
+
+  pillars: {
+    'Era / Pop Culture': ['nostalgia','throwback','retro','old school','remember','reboot','reunion tour','rerelease','revival','remake','sequel','prequel','tribute','rip','classic','vintage'],
+    'Parent Life': ['parent','parenting','dad','mom','kid','child','school','daycare','marriage','wife','husband','partner','family','household','suburbs','mortgage'],
+    'Friendship & Relationships': ['friend','friendship','dating','marriage','breakup','tinder','couple','romance','single','divorce','crush','wedding','engagement','partner'],
+    'Hot Takes': ['vs','versus','best','worst','tier','ranked','controversy','debate','feud','beef','cancel','cancelled','overrated','underrated','wrong','disagree','hot take','unpopular','goat','mid'],
+    'Politics / Current Events': ['trump','biden','congress','senator','president','tariff','iran','china','russia','ukraine','israel','war','election','democrat','republican','government','policy','legislation','supreme court','immigration'],
+    'Food': ['food','restaurant','recipe','cooking','meal','eat','dinner','lunch','breakfast','snack','dish','chef','menu','taste','flavor','spicy','street food','fast food','bbq','cookout','grocery','jollibee','mcdonald','wendy','chipotle','starbucks'],
+    'Heritage & Identity': ['identity','heritage','race','culture','immigrant','diaspora','first generation','code switch','suburbs','community','tradition'],
+    'Career / Money / Economy': ['career','job','quit','laid off','fired','salary','raise','bonus','mortgage','rent','broke','debt','retirement','401k','side hustle','hustle','inflation','recession','grocery prices','12-pack','price hike','gas prices','minimum wage'],
+    'Life Advice': ['advice','tips','life lesson','wisdom','therapy','mental health','self-care','burnout'],
+  },
+
+  // Real signature phrases discovered in Beta Ep 2 (2026-04-28). Update as more eps land.
+  signatureBigrams: ['you know what i\'m saying','yeah yeah yeah','that\'s the problem','i feel like','i was gonna say','what the fuck','thicker than water','quarter of a penny','back in the day','for real','no debate','hot takes','oh bro'],
+
+  // Crude / body humor — biggest theme in Ep 2 (141 mentions). Real, not a side thing.
+  bodyHumor: ['foot job','hand job','foot fetish','swamp ass','wax','waxed','stubble','poop','shit yourself','fart','farting','penis','dick','balls','tits','breast','nipple','squirt','squirting','ass','asshole','toilet','butthole','crusty','smelly','funky'],
+
+  // Sci-fi / books — Pogi & Rob both pull toward this (46 mentions in Ep 2)
+  scifi: ['sci-fi','sci fi','science fiction','novel','book series','dune','foundation','hell divers','expanse','three body','star wars','star trek','dystopian','post-apocalyptic','time travel','alien','spaceship','aliens'],
+
+  // Space / NASA — major Ep 2 theme (44 mentions). Pogi's deep-dive lane.
+  space: ['moon','mars','nasa','artemis','space','spacex','rocket','astronaut','apollo','planet','satellite','moon landing','space station','iss','orbit','telescope','james webb','spacewalk','launch','sun','solar'],
+
+  // Conspiracy / questioning narrative — Vanilla's lane, also crosses into religion
+  conspiracy: ['conspiracy','flat earth','flat-earth','hollow earth','simulation theory','illuminati','deep state','false flag','hoax','government cover','government coverup','psyop','crisis actor','they don\'t want you','wake up','rabbit hole','red pill'],
+
+  hotTakeWords: ['vs','versus','best','worst','tier','ranked','controversy','beef','feud','debate','cancelled','exposed','drops','reveals','goes off','clapped back','slammed','admits','calls out','fires back','blasts'],
+
+  energyWords: ['shocking','wild','crazy','insane','unbelievable','viral','goes viral','breaks','exposes','outrage','fired','arrested','dies','dead','stuns','reveals','admits'],
+};
+
+// --- LANES ----------------------------------------------------------------
+const LANES = [
+  { id:'general', label:'News + Wild', icon:'📰', color:'#F2A62E',
+    rss:[
+      { src:'AP Top', url:'https://feeds.apnews.com/rss/apf-topnews' },
+      { src:'NPR', url:'https://feeds.npr.org/1001/rss.xml' },
+      { src:'Reuters', url:'https://feeds.reuters.com/reuters/worldNews' },
+      { src:'BBC', url:'https://feeds.bbci.co.uk/news/world/rss.xml' },
+      { src:'NotTheOnion', url:'https://www.reddit.com/r/nottheonion/.rss' },
+    ]},
+  { id:'tech', label:'Tech / AI / Internet', icon:'⚡', color:'#7B5EA7',
+    api:'hn',
+    rss:[
+      { src:'Verge', url:'https://www.theverge.com/rss/index.xml' },
+      { src:'Ars Technica', url:'https://feeds.arstechnica.com/arstechnica/index' },
+      { src:'Engadget', url:'https://www.engadget.com/rss.xml' },
+    ]},
+  { id:'culture', label:'Culture / Pop / Sports', icon:'🎤', color:'#D4A017',
+    rss:[
+      { src:'Complex', url:'https://www.complex.com/feeds/channels/all.rss' },
+      { src:'ESPN', url:'https://www.espn.com/espn/rss/news' },
+      { src:'Variety', url:'https://variety.com/feed/' },
+      { src:'AV Club', url:'https://www.avclub.com/rss' },
+      { src:'Pitchfork', url:'https://pitchfork.com/feed/feed-news/rss' },
+    ]},
+  { id:'politics', label:'Politics / Money / Econ', icon:'🏛️', color:'#C0392B',
+    rss:[
+      { src:'Politico', url:'https://www.politico.com/rss/politicopicks.xml' },
+      { src:'The Hill', url:'https://thehill.com/feed/' },
+      { src:'MarketWatch', url:'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
+      { src:'CNBC', url:'https://www.cnbc.com/id/100003114/device/rss/rss.html' },
+    ]},
+];
+
+// --- STATE ----------------------------------------------------------------
+const STATE_KEY = 'gratisfaction.feed.v2';
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STATE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // Migrate old multi-bucket state to single bucket
+      if (parsed.buckets && (parsed.buckets.pogi || parsed.buckets.vanilla || parsed.buckets.rob || parsed.buckets.episode)) {
+        const merged = [
+          ...(parsed.buckets.pogi||[]),
+          ...(parsed.buckets.vanilla||[]),
+          ...(parsed.buckets.rob||[]),
+          ...(parsed.buckets.episode||[]),
+        ];
+        parsed.buckets = { picks: merged };
+      }
+      if (!parsed.buckets) parsed.buckets = { picks: [] };
+      if (!parsed.buckets.picks) parsed.buckets.picks = [];
+      return parsed;
+    }
+  }catch(e){}
+  return { feed:{ general:[], tech:[], culture:[], politics:[] }, buckets:{ picks:[] }, lastUpdate:null };
+}
+function saveState(){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save failed',e); } }
+
+// --- BRAND-FIT SCORING (v2) -----------------------------------------------
+// Word-boundary + light stem matching: "kid" matches "kids" but not "kidney";
+// "aim" matches "AIM" but not "claims" (different word).
+function _matches(text, w){
+  const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('\\b' + escaped + "(?:s|es|ed|ing|'s)?\\b", 'i').test(text);
+}
+function _anyMatch(text, list){
+  for(const w of list){ if(_matches(text, w)) return w; }
+  return null;
+}
+
+function scoreTopic(title, summary){
+  const text = ((title||'') + ' ' + (summary||''));
+  let score = 0;
+  const reasons = [];
+
+  // Tier 1 — show DNA (calibrated post-Beta-Ep-2)
+  if(_anyMatch(text, BRAND.parent)){ score += 25; reasons.push('parent'); }
+  if(_anyMatch(text, BRAND.friendship)){ score += 20; reasons.push('friendship'); }
+  if(_anyMatch(text, BRAND.bodyHumor)){ score += 20; reasons.push('body-humor'); }  // NEW — biggest theme in Ep 2
+  if(_anyMatch(text, BRAND.era)){ score += 15; reasons.push('era'); }  // demoted +25→+15 (only 1 hit in Ep 2, watch over time)
+
+  // Tier 2 — pillars
+  let pillarHit = null;
+  for(const [pillar, words] of Object.entries(BRAND.pillars)){
+    if(_anyMatch(text, words)){ score += 18; pillarHit = pillar; reasons.push(pillar.toLowerCase().split(' ')[0]); break; }
+  }
+
+  // Show-specific lanes (discovered from real data)
+  if(_anyMatch(text, BRAND.scifi)){ score += 15; reasons.push('sci-fi'); }
+  if(_anyMatch(text, BRAND.space)){ score += 18; reasons.push('space'); }  // Pogi's deep-dive lane (44 mentions in Ep 2)
+  if(_anyMatch(text, BRAND.conspiracy)){ score += 12; reasons.push('conspiracy'); }
+  if(_anyMatch(text, BRAND.heritage)){ score += 15; reasons.push('heritage'); }
+  if(_anyMatch(text, BRAND.hotTakeWords)){ score += 12; reasons.push('hot-take'); }
+  if(_anyMatch(text, BRAND.signatureBigrams)){ score += 12; reasons.push('signature'); }
+  if(_anyMatch(text, BRAND.energyWords)){ score += 8; reasons.push('energy'); }
+  if((title||'').length > 30 && (title||'').length < 110) score += 4;
+
+  score = Math.min(100, score);
+  let tier = 'c';
+  if(score >= 60) tier = 's';
+  else if(score >= 38) tier = 'a';
+  else if(score >= 20) tier = 'b';
+
+  return { score, tier, reasons:[...new Set(reasons)].slice(0,4), pillar:pillarHit };
+}
+
+// --- FEED FETCHERS --------------------------------------------------------
+async function fetchHN(limit=10){
+  try{
+    const ids = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json());
+    const picks = ids.slice(0, limit);
+    const items = await Promise.all(picks.map(id =>
+      fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r=>r.json())
+    ));
+    return items.filter(i=>i && i.title).map(i => ({
+      id:'hn-'+i.id,
+      title:i.title,
+      summary:'HN · '+(i.score||0)+' pts · '+(i.descendants||0)+' comments',
+      source:'Hacker News',
+      url:i.url || `https://news.ycombinator.com/item?id=${i.id}`,
+      ts:Date.now(),
+    }));
+  }catch(e){ console.warn('HN fail',e); return []; }
+}
+
+async function fetchRSS(url, srcName){
+  try{
+    const proxy = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url);
+    const data = await fetch(proxy).then(r=>r.json());
+    if(!data || !data.items) return [];
+    return data.items.slice(0, 8).map((it,idx) => ({
+      id: srcName+'-'+(it.guid||it.link||idx),
+      title: (it.title||'').replace(/\s+/g,' ').trim(),
+      summary: (it.description||'').replace(/<[^>]+>/g,'').slice(0, 140),
+      source: srcName,
+      url: it.link,
+      ts: it.pubDate ? Date.parse(it.pubDate) : Date.now(),
+    }));
+  }catch(e){ console.warn('rss fail', srcName, e); return []; }
+}
+
+async function refreshLane(lane){
+  const items = [];
+  if(lane.api === 'hn'){ items.push(...(await fetchHN(8))); }
+  for(const f of (lane.rss||[])){ items.push(...(await fetchRSS(f.url, f.src))); }
+  const seen = new Set();
+  const uniq = items.filter(it => {
+    const key = (it.title||'').toLowerCase().slice(0,80);
+    if(seen.has(key)) return false; seen.add(key); return true;
+  });
+  uniq.forEach(it => {
+    const s = scoreTopic(it.title, it.summary);
+    it.score = s.score; it.tier = s.tier; it.reasons = s.reasons; it.pillar = s.pillar;
+  });
+  uniq.sort((a,b) => b.score - a.score);
+  const manual = (state.feed[lane.id]||[]).filter(t => t.manual);
+  state.feed[lane.id] = [...manual, ...uniq.slice(0, 16)];
+  saveState();
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('refreshBtn');
+  btn.innerHTML = '<span class="loader"></span> Pulling feeds…';
+  btn.disabled = true;
+  try{
+    await Promise.all(LANES.map(refreshLane));
+    state.lastUpdate = Date.now();
+    saveState();
+    render();
+    toast('Feeds refreshed · ' + Object.values(state.feed).reduce((a,l)=>a+l.length,0) + ' topics');
+  }catch(e){
+    toast('Some feeds failed — check console');
+    console.error(e);
+  }finally{
+    btn.innerHTML = 'Refresh Feeds';
+    btn.disabled = false;
+  }
+}
+
+// --- MANUAL ADD -----------------------------------------------------------
+function addManual(laneId){
+  const inp = document.getElementById('add-'+laneId);
+  const title = (inp.value||'').trim();
+  if(!title) return;
+  const s = scoreTopic(title, '');
+  const item = {
+    id:'manual-'+Date.now(),
+    title, summary:'Added manually', source:'Manual',
+    url:'', ts:Date.now(), manual:true,
+    score:s.score, tier:s.tier, reasons:s.reasons, pillar:s.pillar,
+  };
+  state.feed[laneId].unshift(item);
+  saveState(); render();
+  inp.value='';
+}
+
+// --- DRAG / DROP ----------------------------------------------------------
+let dragId = null;
+function dragStart(e, id){
+  dragId = id;
+  e.dataTransfer.setData('text/plain', id);
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.classList.add('dragging');
+}
+function dragEnd(e){
+  e.target.classList.remove('dragging'); dragId=null;
+  document.querySelectorAll('.host-bucket.drag-over').forEach(b=>b.classList.remove('drag-over'));
+}
+function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('drag-over'); }
+function drop(e, host){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain') || dragId;
+  if(!id) return;
+  let item=null;
+  for(const L of LANES){
+    const f = state.feed[L.id]||[];
+    const idx = f.findIndex(t=>t.id===id);
+    if(idx>=0){ item = f[idx]; f.splice(idx,1); break; }
+  }
+  if(!item){
+    for(const h of Object.keys(state.buckets)){
+      const idx = state.buckets[h].findIndex(t=>t.id===id);
+      if(idx>=0){ item = state.buckets[h][idx]; state.buckets[h].splice(idx,1); break; }
+    }
+  }
+  if(!item) return;
+  state.buckets[host].push(item);
+  saveState(); render();
+}
+
+function returnTopic(id){
+  for(const h of Object.keys(state.buckets)){
+    const idx = state.buckets[h].findIndex(t=>t.id===id);
+    if(idx>=0){
+      const item = state.buckets[h].splice(idx,1)[0];
+      const lane = item.id.startsWith('hn-') ? 'tech' : 'general';
+      state.feed[lane].unshift(item);
+      saveState(); render(); return;
+    }
+  }
+}
+function deleteTopic(id, location){
+  if(location==='feed'){
+    for(const L of LANES){
+      const f = state.feed[L.id]||[];
+      const idx = f.findIndex(t=>t.id===id);
+      if(idx>=0){ f.splice(idx,1); break; }
+    }
+  } else {
+    for(const h of Object.keys(state.buckets)){
+      const idx = state.buckets[h].findIndex(t=>t.id===id);
+      if(idx>=0){ state.buckets[h].splice(idx,1); break; }
+    }
+  }
+  saveState(); render();
+}
+
+// --- RENDER ---------------------------------------------------------------
+function render(){
+  const now = new Date();
+  // Find this week's Tuesday (the topic-prep ritual anchor)
+  const day = now.getDay(); // 0=Sun, 2=Tue
+  const tuesdayOffset = (2 - day + 7) % 7;  // days until next Tuesday
+  const tuesday = new Date(now);
+  if (day <= 2) {
+    // Mon/Tue: this week's Tuesday is upcoming or today
+    tuesday.setDate(now.getDate() + tuesdayOffset);
+  } else {
+    // Wed-Sun: last Tuesday
+    tuesday.setDate(now.getDate() - (day - 2));
+  }
+  const isToday = tuesday.toDateString() === now.toDateString();
+  const tueLabel = tuesday.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('weekLabel').textContent = isToday ? `📍 Today · ${tueLabel}` : `Tue · ${tueLabel}`;
+  document.getElementById('lastUpdated').textContent = state.lastUpdate ? 'updated ' + timeAgo(state.lastUpdate) : 'never refreshed — click Refresh Feeds';
+
+  const grid = document.getElementById('feedGrid');
+  grid.innerHTML = '';
+  for(const L of LANES){
+    const items = state.feed[L.id] || [];
+    const col = document.createElement('div');
+    col.className = 'feed-col';
+    col.innerHTML = `
+      <div class="feed-col-head">
+        <div class="lane-icon" style="background:${L.color}22;color:${L.color}">${L.icon}</div>
+        <h3>${L.label}</h3>
+        <span class="count">${items.length}</span>
+      </div>
+      <div class="feed-col-body">
+        ${items.length===0 ? '<div class="empty">No topics yet · click Refresh Feeds or add manually below</div>' : items.map(t=>topicHTML(t,'feed')).join('')}
+      </div>
+      <div class="add-row">
+        <input id="add-${L.id}" placeholder="Add a topic to ${L.label.toLowerCase()}…" onkeydown="if(event.key==='Enter')addManual('${L.id}')" />
+        <button onclick="addManual('${L.id}')">Add</button>
+      </div>
+    `;
+    grid.appendChild(col);
+  }
+
+  // Single shared bucket
+  {
+    const items = state.buckets.picks || [];
+    const body = document.getElementById('bucket-picks');
+    const countEl = document.getElementById('count-picks');
+    if(countEl) countEl.textContent = items.length;
+    if(body){
+      if(items.length===0){
+        body.innerHTML = '<div class="empty">drag what you want to riff on into the pool<div class="empty-hint">all 3 of us · drop here</div></div>';
+      } else {
+        body.innerHTML = items.map(t=>topicHTML(t,'bucket')).join('');
+      }
+    }
+  }
+
+  const all = Object.values(state.buckets).flat();
+  document.getElementById('totalPicked').textContent = all.length;
+  if(all.length>0){
+    const avg = Math.round(all.reduce((a,t)=>a+(t.score||0),0)/all.length);
+    document.getElementById('avgScore').textContent = avg;
+    const counts = {};
+    all.forEach(t => { if(t.pillar){ counts[t.pillar] = (counts[t.pillar]||0)+1; } });
+    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('topPillar').textContent = top ? top[0].split(' ')[0] : '—';
+  } else {
+    document.getElementById('avgScore').textContent='—';
+    document.getElementById('topPillar').textContent='—';
+  }
+}
+
+function topicHTML(t, where){
+  const tier = t.tier || 'c';
+  const reasons = (t.reasons||[]).map(r=>`<span class="reason">${r}</span>`).join('');
+  return `
+    <di

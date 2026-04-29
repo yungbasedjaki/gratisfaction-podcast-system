@@ -1,0 +1,20 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Backup files
+*.bak
+*~
+
+# Environment / secrets (none right now, but defensive)
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
